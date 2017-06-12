@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
@@ -127,7 +128,7 @@ public class MavenRepositoryDeployer
 
 
     public void deployToRemote( String targetUrl, String username, String password, Boolean checkTarget,
-        Boolean verifyOnly )
+        Boolean verifyOnly, List<String> artifactCoordinates)
     {
         Collection<File> leafDirectories = getLeafDirectories( repositoryPath );
 
@@ -214,7 +215,7 @@ public class MavenRepositoryDeployer
                         artifact = new DefaultArtifact( g, a, classifier, extension, v );
                     }
 
-                    if ( artifact != null )
+                    if ( artifact != null && artifactCoordinates.contains(artifact.toString()))
                     {
                         artifact = artifact.setFile( file );
                         deployRequest.addArtifact( artifact );

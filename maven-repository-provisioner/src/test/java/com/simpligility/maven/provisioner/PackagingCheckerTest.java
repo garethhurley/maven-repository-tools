@@ -13,34 +13,37 @@ import org.junit.Test;
 
 public class PackagingCheckerTest 
 {
+    
+    private Artifact createTestAritfact( String artifactCoordinate ) 
+    {
+         List<Artifact> artifacts = new ArrayList<Artifact>();
+         Artifact artifact = new DefaultArtifact( artifactCoordinate );
+         artifacts.add( artifact );
+         return artifact;
+    }
+    
 
     @Test
     public void testToAssertASecondArtifactIsCreated() 
     {
-         List<Artifact> artifacts = new ArrayList<Artifact>();
          String artifactCoordinate = "aopalliance:aopalliance:jar:1.0";
-         Artifact artifact = new DefaultArtifact( artifactCoordinate );
-         artifacts.add( artifact );
-         String extension = artifact.getExtension();
+         Artifact artifact = createTestAritfact( artifactCoordinate );
+         List<Artifact> processedArtifacts = 
+               PackagingChecker.postProcess( artifactCoordinate, artifact );         
 
-         assertEquals( artifacts.size(), 1 );
-         PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
-         assertEquals( artifacts.size(), 2 );
+         PackagingChecker.postProcess( artifactCoordinate, artifact );
+         assertEquals( processedArtifacts.size(), 2 );
     }
     
     
     @Test
     public void testToAssertJarCoordinatesGeneratePomCoordinates() 
     {
-         List<Artifact> artifacts = new ArrayList<Artifact>();
          String artifactCoordinate = "aopalliance:aopalliance:jar:1.0";
-         Artifact artifact = new DefaultArtifact( artifactCoordinate );
-         artifacts.add( artifact );
-         String extension = artifact.getExtension();
-
-         PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
-         
-         Artifact newArtifact = artifacts.get( 1 );
+         Artifact artifact = createTestAritfact( artifactCoordinate );
+         List<Artifact> processedArtifacts = 
+              PackagingChecker.postProcess( artifactCoordinate, artifact );                  
+         Artifact newArtifact = processedArtifacts.get( 1 );
          assertEquals( newArtifact.getExtension(), "pom" ); 
     }
     
@@ -49,32 +52,25 @@ public class PackagingCheckerTest
     @Test
     public void testToAssertPomCoordinatesGenerateJarCoordinates() 
     {
-         List<Artifact> artifacts = new ArrayList<Artifact>();
          String artifactCoordinate = "aopalliance:aopalliance:pom:1.0";
-         Artifact artifact = new DefaultArtifact( artifactCoordinate );
-         artifacts.add( artifact );
-         String extension = artifact.getExtension();
-
-         PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
-         
-         assertEquals( artifacts.size(), 1 ); 
+         Artifact artifact = createTestAritfact( artifactCoordinate );
+         List<Artifact> processedArtifacts = PackagingChecker.postProcess( artifactCoordinate, artifact );
+         assertEquals( processedArtifacts.size(), 1 ); 
     }
-    
+
+
+
     
     @Test
     public void testToAssertNoPackagingSpecificatioResultsInBothJarAndPom() 
     {
-         List<Artifact> artifacts = new ArrayList<Artifact>();
-         String artifactCoordinate = "aopalliance:aopalliance:1.0";
-         Artifact artifact = new DefaultArtifact( artifactCoordinate );
-         artifacts.add( artifact );
-         String extension = artifact.getExtension();
-
-         PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
+        String artifactCoordinate = "aopalliance:aopalliance:1.0";
+        Artifact artifact = createTestAritfact( artifactCoordinate );
+        List<Artifact> processedArtifacts = PackagingChecker.postProcess( artifactCoordinate, artifact );
          
-         assertEquals( artifacts.size(), 2 ); 
-         assertEquals( artifacts.get( 0 ).getExtension(), "jar" ); 
-         assertEquals( artifacts.get( 1 ).getExtension(), "pom" ); 
+        assertEquals( processedArtifacts.size(), 2 ); 
+        assertEquals( processedArtifacts.get( 0 ).getExtension(), "jar" ); 
+        assertEquals( processedArtifacts.get( 1 ).getExtension(), "pom" ); 
     }
 
 

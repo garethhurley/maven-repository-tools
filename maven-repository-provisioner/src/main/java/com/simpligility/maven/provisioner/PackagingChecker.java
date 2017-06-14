@@ -1,5 +1,6 @@
 package com.simpligility.maven.provisioner;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.aether.artifact.Artifact;
@@ -13,9 +14,11 @@ public class PackagingChecker
     private static final String JAR = "jar";
 
 
-    public static void filter( 
-           List<Artifact> artifacts, String artifactCoordinate, Artifact artifact, String extension ) 
-    {
+    public static List<Artifact> postProcess( String artifactCoordinate, Artifact artifact )
+    { 
+        List<Artifact> artifacts = new ArrayList<Artifact>();
+        artifacts.add( artifact );
+        String extension =  artifact.getExtension();
         if ( extension.equals( JAR ) && artifactCoordinate.contains( JAR ) ) 
         {
             String artifactCoordinateCopy = artifactCoordinate.replaceAll(
@@ -24,7 +27,7 @@ public class PackagingChecker
          }
         else if ( extension.equals( POM ) )
         {
-            return;
+            return artifacts;
         }
         else
         {
@@ -32,6 +35,7 @@ public class PackagingChecker
                artifact.getVersion(),  String.format( "%s:%s", POM, artifact.getVersion() ) );
         artifacts.add( new DefaultArtifact( artifactCoordinateCopy ) );
         }
+        return artifacts;
     }
 
 }

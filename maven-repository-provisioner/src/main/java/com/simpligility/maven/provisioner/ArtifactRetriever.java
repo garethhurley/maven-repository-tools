@@ -91,15 +91,13 @@ public class ArtifactRetriever
     {
 
         List<Artifact> artifacts = new ArrayList<Artifact>();
+        
 
         for ( String artifactCoordinate : artifactCoordinates )
         {
 
             Artifact artifact = new DefaultArtifact( artifactCoordinate );
-            artifacts.add( artifact );
-            String extension = artifact.getExtension();
-
-            PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
+            artifacts.addAll( PackagingChecker.postProcess( artifactCoordinate, artifact ) );
         }
 
         List<ArtifactResult> artifactResults = new ArrayList<ArtifactResult>();

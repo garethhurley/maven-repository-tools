@@ -18,16 +18,11 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
 import org.eclipse.aether.util.graph.selector.OptionalDependencySelector;
@@ -47,6 +42,8 @@ import com.simpligility.maven.MavenConstants;
 public class ArtifactRetriever
 {
 
+    private static final String POM = "pom";
+
     private static Logger logger = LoggerFactory.getLogger( "ArtifactRetriever" );
 
     private RepositorySystem system;
@@ -56,10 +53,12 @@ public class ArtifactRetriever
     private File repositoryPath;
 
     private RemoteRepository sourceRepository;
-    
+
     private final TreeSet<String> successfulRetrievals = new TreeSet<String>();
 
-    private final TreeSet<String> failedRetrievals = new TreeSet<String>();
+     private final TreeSet<String> failedRetrievals = new TreeSet<String>();
+     
+     private final List<RemoteRepository> remoteRepositoryList = new ArrayList<RemoteRepository>();
 
 
     public ArtifactRetriever( File repositoryPath )
@@ -69,41 +68,46 @@ public class ArtifactRetriever
     }
 
     private void initialize()
-    {
+   {
         system = RepositoryHandler.getRepositorySystem();
         session = RepositoryHandler.getRepositorySystemSession( system, repositoryPath );
     }
 
     public void retrieve( List<String> artifactCoordinates, String sourceUrl, boolean includeSources,
-                          boolean includeJavadoc, boolean includeProvidedScope, boolean includeTestScope )
+           boolean includeJavadoc, boolean includeProvidedScope, boolean includeTestScope )
     {
         RemoteRepository.Builder builder = new RemoteRepository.Builder( "central", "default", sourceUrl );
         builder.setProxy( ProxyHelper.getProxy( sourceUrl ) );
         sourceRepository = builder.build();
+        remoteRepositoryList.add( sourceRepository );
 
         getArtifactResults( artifactCoordinates, includeProvidedScope, includeTestScope );
 
         getAdditionalArtifacts( includeSources, includeJavadoc );
     }
 
-    private List<ArtifactResult> getArtifactResults( List<String> artifactCoordinates, boolean includeProvidedScope,
-        boolean includeTestScope )
+     private List<ArtifactResult> getArtifactResults( List<String> artifactCoordinates, boolean includeProvidedScope,
+            boolean includeTestScope )
     {
 
         List<Artifact> artifacts = new ArrayList<Artifact>();
+
         for ( String artifactCoordinate : artifactCoordinates )
         {
-            artifacts.add( new DefaultArtifact( artifactCoordinate ) );
+
+            Artifact artifact = new DefaultArtifact( artifactCoordinate );
+            artifacts.add( artifact );
+            String extension = artifact.getExtension();
+
+            PackagingChecker.filter( artifacts, artifactCoordinate, artifact, extension );
         }
 
         List<ArtifactResult> artifactResults = new ArrayList<ArtifactResult>();
-        DependencyFilter depFilter = 
-            DependencyFilterUtils.classpathFilter( JavaScopes.TEST );
-        
+
         Collection<String> includes = new ArrayList<String>();
         // we always include compile scope, not doing that makes no sense
         includes.add( JavaScopes.COMPILE );
-        
+
         Collection<String> excludes = new ArrayList<String>();
         // always exclude system scope since it is machine specific and wont work in 99% of cases
         excludes.add( JavaScopes.SYSTEM );
@@ -116,7 +120,7 @@ public class ArtifactRetriever
         {
             excludes.add( JavaScopes.PROVIDED ); 
         }
-        
+
         if ( includeTestScope ) 
         {
             includes.add( JavaScopes.TEST );
@@ -125,13 +129,13 @@ public class ArtifactRetriever
         {
             excludes.add( JavaScopes.TEST );
         }
-        
+
         DependencySelector selector =
-            new AndDependencySelector(
-            new ScopeDependencySelector( includes, excludes ),
-            new OptionalDependencySelector(),
-            new ExclusionDependencySelector()
-        );
+                new AndDependencySelector(
+                        new ScopeDependencySelector( includes, excludes ),
+                        new OptionalDependencySelector(),
+                        new ExclusionDependencySelector()
+                        );
         session.setDependencySelector( selector );
 
         for ( Artifact artifact : artifacts )
@@ -140,23 +144,15 @@ public class ArtifactRetriever
             collectRequest.setRoot( new Dependency( artifact, JavaScopes.COMPILE ) );
             collectRequest.addRepository( sourceRepository );
 
-            DependencyRequest dependencyRequest = new DependencyRequest( collectRequest, depFilter );
+            ArtifactRequest request = new ArtifactRequest( artifact, remoteRepositoryList, null );
 
             try
             {
-                DependencyResult resolvedDependencies = system.resolveDependencies( session, dependencyRequest );
-                artifactResults.addAll( resolvedDependencies.getArtifactResults() );
-                for ( ArtifactResult result : resolvedDependencies.getArtifactResults() )
-                {
-                    successfulRetrievals.add( result.toString() );
-                }
+                ArtifactResult resolvedDependencies = system.resolveArtifact( session, request );
+                artifactResults.add( resolvedDependencies );
+                successfulRetrievals.add( resolvedDependencies.getArtifact().toString() );
             }
-            catch ( DependencyResolutionException e )
-            {
-                logger.info( "DependencyResolutionException ", e );
-                failedRetrievals.add( e.getMessage() );
-            }
-            catch ( NullPointerException npe )
+            catch ( NullPointerException | ArtifactResolutionException npe )
             {
                 logger.info( "NullPointerException resolving dependencies ", npe );
                 failedRetrievals.add( npe.getMessage() );
@@ -165,6 +161,7 @@ public class ArtifactRetriever
 
         return artifactResults;
     }
+
 
     private void getAdditionalArtifacts( boolean includeSources, boolean includeJavadoc )
     {
@@ -182,7 +179,7 @@ public class ArtifactRetriever
                 logger.info( "Failed to retrieve gav from " + pomFile.getAbsolutePath() );
             }
 
-            if ( !"pom".equals( gav.getPackaging() ) )
+            if ( !POM.equals( gav.getPackaging() ) )
             {
                 // this gets e.g. a .hpi file in addition to a .jar
                 // but also causes failed retrievals for files where the packaging is NOT used for extension
@@ -213,7 +210,7 @@ public class ArtifactRetriever
 
     private void getJavadocJar( Gav gav )
     {
-      getArtifact( gav, MavenConstants.JAR, MavenConstants.JAVADOC );
+        getArtifact( gav, MavenConstants.JAR, MavenConstants.JAVADOC );
     }
 
     private void getArtifact( Gav gav, String packagingOverride, String classifier )
@@ -221,14 +218,14 @@ public class ArtifactRetriever
         String packaging;
         if ( StringUtils.isNotEmpty( packagingOverride ) )
         {
-          packaging = packagingOverride;
+            packaging = packagingOverride;
         }
         else
         {
-          packaging = gav.getPackaging();
+            packaging = gav.getPackaging();
         }
         Artifact artifact = new DefaultArtifact( gav.getGroupId(), gav.getArtifactId(), classifier, packaging,
-                                                 gav.getVersion() );
+                gav.getVersion() );
         // avoid download if we got it locally already? or not bother and just get it again? 
         ArtifactRequest artifactRequest = new ArtifactRequest();
         artifactRequest.setArtifact( artifact );
@@ -272,11 +269,12 @@ public class ArtifactRetriever
 
     public boolean hasFailures() 
     {
-      return failedRetrievals.size() > 0;
+        return failedRetrievals.size() > 0;
     }
 
     public String getFailureMessage() 
     {
-      return "Failed to retrieve some artifacts.";
+        return "Failed to retrieve some artifacts.";
     }
+
 }

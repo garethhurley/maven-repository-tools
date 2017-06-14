@@ -117,7 +117,7 @@ public class MavenRepositoryDeployer
     {
         Collection<File> pomFiles = new ArrayList<File>();
         Collection<File> leafDirectories = getLeafDirectories( repoPath );
-        for ( File leafDirectory : leafDirectories )
+         for ( File leafDirectory : leafDirectories )
         {
             IOFileFilter fileFilter = new AndFileFilter( new WildcardFileFilter( "*.pom" ),
                                                new NotFileFilter( new SuffixFileFilter( "sha1" ) ) );
@@ -128,7 +128,7 @@ public class MavenRepositoryDeployer
 
 
     public void deployToRemote( String targetUrl, String username, String password, Boolean checkTarget,
-        Boolean verifyOnly, List<String> artifactCoordinates)
+        Boolean verifyOnly, List<String> artifactCoordinates) 
     {
         Collection<File> leafDirectories = getLeafDirectories( repositoryPath );
 
@@ -215,7 +215,7 @@ public class MavenRepositoryDeployer
                         artifact = new DefaultArtifact( g, a, classifier, extension, v );
                     }
 
-                    if ( artifact != null && artifactCoordinates.contains(artifact.toString()))
+                    if ( artifact != null)
                     {
                         artifact = artifact.setFile( file );
                         deployRequest.addArtifact( artifact );

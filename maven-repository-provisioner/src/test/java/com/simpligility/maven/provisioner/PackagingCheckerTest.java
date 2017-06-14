@@ -4,7 +4,6 @@ package com.simpligility.maven.provisioner;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.aether.artifact.Artifact;
@@ -14,24 +13,17 @@ import org.junit.Test;
 public class PackagingCheckerTest 
 {
     
-    private Artifact createTestAritfact( String artifactCoordinate ) 
+    private List<Artifact> createTestAritfact( String artifactCoordinate ) 
     {
-         List<Artifact> artifacts = new ArrayList<Artifact>();
-         Artifact artifact = new DefaultArtifact( artifactCoordinate );
-         artifacts.add( artifact );
-         return artifact;
+         return PackagingChecker.postProcess( artifactCoordinate, new DefaultArtifact( artifactCoordinate  ) 
+                  );
     }
     
 
     @Test
     public void testToAssertASecondArtifactIsCreated() 
     {
-         String artifactCoordinate = "aopalliance:aopalliance:jar:1.0";
-         Artifact artifact = createTestAritfact( artifactCoordinate );
-         List<Artifact> processedArtifacts = 
-               PackagingChecker.postProcess( artifactCoordinate, artifact );         
-
-         PackagingChecker.postProcess( artifactCoordinate, artifact );
+         List<Artifact> processedArtifacts = createTestAritfact( "aopalliance:aopalliance:jar:1.0" ); 
          assertEquals( processedArtifacts.size(), 2 );
     }
     
@@ -39,10 +31,7 @@ public class PackagingCheckerTest
     @Test
     public void testToAssertJarCoordinatesGeneratePomCoordinates() 
     {
-         String artifactCoordinate = "aopalliance:aopalliance:jar:1.0";
-         Artifact artifact = createTestAritfact( artifactCoordinate );
-         List<Artifact> processedArtifacts = 
-              PackagingChecker.postProcess( artifactCoordinate, artifact );                  
+         List<Artifact> processedArtifacts =  createTestAritfact( "aopalliance:aopalliance:jar:1.0" );                  
          Artifact newArtifact = processedArtifacts.get( 1 );
          assertEquals( newArtifact.getExtension(), "pom" ); 
     }
@@ -52,9 +41,7 @@ public class PackagingCheckerTest
     @Test
     public void testToAssertPomCoordinatesGenerateJarCoordinates() 
     {
-         String artifactCoordinate = "aopalliance:aopalliance:pom:1.0";
-         Artifact artifact = createTestAritfact( artifactCoordinate );
-         List<Artifact> processedArtifacts = PackagingChecker.postProcess( artifactCoordinate, artifact );
+         List<Artifact> processedArtifacts = createTestAritfact( "aopalliance:aopalliance:pom:1.0" );
          assertEquals( processedArtifacts.size(), 1 ); 
     }
 
@@ -64,9 +51,7 @@ public class PackagingCheckerTest
     @Test
     public void testToAssertNoPackagingSpecificatioResultsInBothJarAndPom() 
     {
-        String artifactCoordinate = "aopalliance:aopalliance:1.0";
-        Artifact artifact = createTestAritfact( artifactCoordinate );
-        List<Artifact> processedArtifacts = PackagingChecker.postProcess( artifactCoordinate, artifact );
+        List<Artifact> processedArtifacts = createTestAritfact(  "aopalliance:aopalliance:1.0" );
          
         assertEquals( processedArtifacts.size(), 2 ); 
         assertEquals( processedArtifacts.get( 0 ).getExtension(), "jar" ); 

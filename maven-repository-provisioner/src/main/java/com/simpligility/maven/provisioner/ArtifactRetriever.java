@@ -95,9 +95,7 @@ public class ArtifactRetriever
 
         for ( String artifactCoordinate : artifactCoordinates )
         {
-
-            Artifact artifact = new DefaultArtifact( artifactCoordinate );
-            artifacts.addAll( PackagingChecker.postProcess( artifactCoordinate, artifact ) );
+            artifacts.addAll( PackagingChecker.postProcess( artifactCoordinate ) );
         }
 
         List<ArtifactResult> artifactResults = new ArrayList<ArtifactResult>();

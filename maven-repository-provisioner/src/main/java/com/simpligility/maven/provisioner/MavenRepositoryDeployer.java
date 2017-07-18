@@ -128,7 +128,7 @@ public class MavenRepositoryDeployer
 
 
     public void deployToRemote( String targetUrl, String username, String password, Boolean checkTarget,
-        Boolean verifyOnly, List<String> artifactCoordinates) 
+        Boolean verifyOnly, List<String> artifactCoordinates )
     {
         Collection<File> leafDirectories = getLeafDirectories( repositoryPath );
 
@@ -215,7 +215,7 @@ public class MavenRepositoryDeployer
                         artifact = new DefaultArtifact( g, a, classifier, extension, v );
                     }
 
-                    if ( artifact != null)
+                    if ( artifact != null )
                     {
                         artifact = artifact.setFile( file );
                         deployRequest.addArtifact( artifact );

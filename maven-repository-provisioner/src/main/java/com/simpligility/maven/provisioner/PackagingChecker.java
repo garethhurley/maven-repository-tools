@@ -14,28 +14,35 @@ public class PackagingChecker
     private static final String JAR = "jar";
 
 
-    public static List<Artifact> postProcess( String artifactCoordinate, Artifact artifact )
+    public static List<Artifact> postProcess( String artifactCoordinate )
     { 
         List<Artifact> artifacts = new ArrayList<Artifact>();
+        Artifact artifact = new DefaultArtifact( artifactCoordinate );
         artifacts.add( artifact );
         String extension =  artifact.getExtension();
-        if ( extension.equals( JAR ) && artifactCoordinate.contains( JAR ) ) 
+        if ( extension.equals( JAR ) )
         {
-            String artifactCoordinateCopy = artifactCoordinate.replaceAll(
-                   String.format( ":%s:", JAR ) , String.format( ":%s:", POM ) );
-            artifacts.add( new DefaultArtifact( artifactCoordinateCopy ) );
-         }
+            if ( hasNoClassifier( artifact ) )
+            {
+                artifacts.add( new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(),
+                        POM, artifact.getVersion() ) );
+            }
+            else
+            {
+                artifacts.add( new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(),
+                        POM, artifact.getVersion() ) );
+            }
+        }
         else if ( extension.equals( POM ) )
         {
             return artifacts;
         }
-        else
-        {
-        String artifactCoordinateCopy = artifactCoordinate.replaceAll(
-               artifact.getVersion(),  String.format( "%s:%s", POM, artifact.getVersion() ) );
-        artifacts.add( new DefaultArtifact( artifactCoordinateCopy ) );
-        }
         return artifacts;
     }
 
-}
+         private static boolean hasNoClassifier( Artifact artifact )
+         {
+             return "".equals( artifact.getClassifier() );
+         }
+
+     }

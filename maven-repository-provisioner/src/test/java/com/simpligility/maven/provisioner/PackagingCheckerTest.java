@@ -7,56 +7,52 @@ import static org.junit.Assert.assertEquals;
 import java.util.List;
 
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.Test;
 
 public class PackagingCheckerTest 
 {
     
-    private List<Artifact> createTestAritfact( String artifactCoordinate ) 
+    private List<Artifact> postProcessArtifact( String inputArtifactCoordinate )
     {
-         return PackagingChecker.postProcess( artifactCoordinate, new DefaultArtifact( artifactCoordinate  ) 
-                  );
+         return PackagingChecker.postProcess( inputArtifactCoordinate );
     }
-    
 
-    @Test
-    public void testToAssertASecondArtifactIsCreated() 
-    {
-         List<Artifact> processedArtifacts = createTestAritfact( "aopalliance:aopalliance:jar:1.0" ); 
-         assertEquals( processedArtifacts.size(), 2 );
-    }
-    
-    
     @Test
     public void testToAssertJarCoordinatesGeneratePomCoordinates() 
     {
-         List<Artifact> processedArtifacts =  createTestAritfact( "aopalliance:aopalliance:jar:1.0" );                  
-         Artifact newArtifact = processedArtifacts.get( 1 );
-         assertEquals( newArtifact.getExtension(), "pom" ); 
+         assertActualArtifactListMatches( postProcessArtifact( "aopalliance:aopalliance:jar:1.0" ),
+                 "aopalliance:aopalliance:jar:1.0", "aopalliance:aopalliance:pom:1.0" );
     }
-    
-    
+
+    @Test
+    public void generatedPomForClassifierJarDoesNotIncludeClassifier()
+    {
+        assertActualArtifactListMatches( postProcessArtifact( "aopalliance:aopalliance:jar:myclassifier:1.0" ),
+                "aopalliance:aopalliance:jar:myclassifier:1.0", "aopalliance:aopalliance:pom:1.0" );
+    }
     
     @Test
     public void testToAssertPomCoordinatesGenerateJarCoordinates() 
     {
-         List<Artifact> processedArtifacts = createTestAritfact( "aopalliance:aopalliance:pom:1.0" );
-         assertEquals( processedArtifacts.size(), 1 ); 
+         assertActualArtifactListMatches( postProcessArtifact( "aopalliance:aopalliance:pom:1.0" ),
+                 "aopalliance:aopalliance:pom:1.0" );
     }
 
-
-
-    
     @Test
-    public void testToAssertNoPackagingSpecificatioResultsInBothJarAndPom() 
+    public void testToAssertNoPackagingSpecificationResultsInBothJarAndPom()
     {
-        List<Artifact> processedArtifacts = createTestAritfact(  "aopalliance:aopalliance:1.0" );
-         
-        assertEquals( processedArtifacts.size(), 2 ); 
-        assertEquals( processedArtifacts.get( 0 ).getExtension(), "jar" ); 
-        assertEquals( processedArtifacts.get( 1 ).getExtension(), "pom" ); 
+        assertActualArtifactListMatches( postProcessArtifact( "aopalliance:aopalliance:1.0" ),
+                "aopalliance:aopalliance:jar:1.0", "aopalliance:aopalliance:pom:1.0" );
     }
 
+    private void assertActualArtifactListMatches( List<Artifact> actualArtifactList, String... expectedArtifact )
+    {
+        assertEquals( "actual generated list of artifacts has unexpected size",
+                expectedArtifact.length, actualArtifactList.size() );
+        for ( int i = 0; i < actualArtifactList.size(); i++ )
+        {
+            assertEquals( expectedArtifact[i] , actualArtifactList.get( i ).toString() );
+        }
+    }
 
 }
